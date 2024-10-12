@@ -48,8 +48,8 @@ aot_compile_op_get_local(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     local_type = get_local_type(comp_ctx, func_ctx, local_idx);
 
     snprintf(name, sizeof(name), "%s%d%s", "local", local_idx, "#");
-    if (!(value = LLVMBuildLoad2(comp_ctx->builder, TO_LLVM_TYPE(local_type),
-                                 func_ctx->locals[local_idx], name))) {
+    if (!(value = WAMR_BUILD_LOAD(comp_ctx->builder, TO_LLVM_TYPE(local_type),
+                                  func_ctx->locals[local_idx], name))) {
         aot_set_last_error("llvm build load fail");
         return false;
     }
@@ -117,7 +117,7 @@ aot_compile_op_set_or_tee_local(AOTCompContext *comp_ctx,
         }
     }
 
-    if (!LLVMBuildStore(comp_ctx->builder, value,
+    if (!WAMR_BUILD_STORE(comp_ctx->builder, value,
                         func_ctx->locals[local_idx])) {
         aot_set_last_error("llvm build store fail");
         return false;
@@ -236,8 +236,8 @@ compile_global(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 
     if (!is_set) {
         if (!(global =
-                  LLVMBuildLoad2(comp_ctx->builder, TO_LLVM_TYPE(global_type),
-                                 global_ptr, "global"))) {
+                  WAMR_BUILD_LOAD(comp_ctx->builder, TO_LLVM_TYPE(global_type),
+                                  global_ptr, "global"))) {
             aot_set_last_error("llvm build load failed.");
             return false;
         }
@@ -304,7 +304,7 @@ compile_global(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             LLVMPositionBuilderAtEnd(comp_ctx->builder, check_underflow_succ);
         }
 
-        if (!(res = LLVMBuildStore(comp_ctx->builder, global, global_ptr))) {
+        if (!(res = WAMR_BUILD_STORE(comp_ctx->builder, global, global_ptr))) {
             aot_set_last_error("llvm build store failed.");
             return false;
         }

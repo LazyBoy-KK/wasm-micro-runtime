@@ -174,7 +174,7 @@ trunc_sat_float_to_int(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     ADD_BASIC_BLOCK(is_greater_block, "is_greater_block");
     ADD_BASIC_BLOCK(res_block, "res_block");
 
-    if (!LLVMBuildCondBr(comp_ctx->builder, res, is_nan_block,
+    if (!WAMR_BUILD_CONDBR(comp_ctx->builder, res, is_nan_block,
                          check_nan_succ)) {
         aot_set_last_error("llvm build cond br failed.");
         goto fail;
@@ -182,7 +182,7 @@ trunc_sat_float_to_int(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 
     /* Start to translate is_nan block */
     LLVMPositionBuilderAtEnd(comp_ctx->builder, is_nan_block);
-    if (!LLVMBuildBr(comp_ctx->builder, res_block)) {
+    if (!WAMR_BUILD_BR(comp_ctx->builder, res_block)) {
         aot_set_last_error("llvm build br failed.");
         goto fail;
     }
@@ -195,7 +195,7 @@ trunc_sat_float_to_int(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         aot_set_last_error("llvm build fcmp failed.");
         goto fail;
     }
-    if (!LLVMBuildCondBr(comp_ctx->builder, is_less, is_less_block,
+    if (!WAMR_BUILD_CONDBR(comp_ctx->builder, is_less, is_less_block,
                          check_less_succ)) {
         aot_set_last_error("llvm build cond br failed.");
         goto fail;
@@ -203,7 +203,7 @@ trunc_sat_float_to_int(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 
     /* Start to translate is_less block */
     LLVMPositionBuilderAtEnd(comp_ctx->builder, is_less_block);
-    if (!LLVMBuildBr(comp_ctx->builder, res_block)) {
+    if (!WAMR_BUILD_BR(comp_ctx->builder, res_block)) {
         aot_set_last_error("llvm build br failed.");
         goto fail;
     }
@@ -216,7 +216,7 @@ trunc_sat_float_to_int(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         aot_set_last_error("llvm build fcmp failed.");
         goto fail;
     }
-    if (!LLVMBuildCondBr(comp_ctx->builder, is_greater, is_greater_block,
+    if (!WAMR_BUILD_CONDBR(comp_ctx->builder, is_greater, is_greater_block,
                          check_greater_succ)) {
         aot_set_last_error("llvm build cond br failed.");
         goto fail;
@@ -224,7 +224,7 @@ trunc_sat_float_to_int(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 
     /* Start to translate is_greater block */
     LLVMPositionBuilderAtEnd(comp_ctx->builder, is_greater_block);
-    if (!LLVMBuildBr(comp_ctx->builder, res_block)) {
+    if (!WAMR_BUILD_BR(comp_ctx->builder, res_block)) {
         aot_set_last_error("llvm build br failed.");
         goto fail;
     }
@@ -270,7 +270,7 @@ trunc_sat_float_to_int(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         aot_set_last_error("llvm build conversion failed.");
         return false;
     }
-    if (!LLVMBuildBr(comp_ctx->builder, res_block)) {
+    if (!WAMR_BUILD_BR(comp_ctx->builder, res_block)) {
         aot_set_last_error("llvm build br failed.");
         goto fail;
     }

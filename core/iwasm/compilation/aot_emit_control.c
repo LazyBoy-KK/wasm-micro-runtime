@@ -60,7 +60,7 @@ format_block_name(char *name, uint32 name_size, uint32 block_index,
 
 #define BUILD_BR(llvm_block)                               \
     do {                                                   \
-        if (!LLVMBuildBr(comp_ctx->builder, llvm_block)) { \
+        if (!WAMR_BUILD_BR(comp_ctx->builder, llvm_block)) { \
             aot_set_last_error("llvm build br failed.");   \
             goto fail;                                     \
         }                                                  \
@@ -68,7 +68,7 @@ format_block_name(char *name, uint32 name_size, uint32 block_index,
 
 #define BUILD_COND_BR(value_if, block_then, block_else)               \
     do {                                                              \
-        if (!LLVMBuildCondBr(comp_ctx->builder, value_if, block_then, \
+        if (!WAMR_BUILD_CONDBR(comp_ctx->builder, value_if, block_then, \
                              block_else)) {                           \
             aot_set_last_error("llvm build cond br failed.");         \
             goto fail;                                                \
@@ -355,7 +355,7 @@ handle_next_reachable_block(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             if (i != 0) {
                 LLVMValueRef res;
                 uint32 param_index = func_type->param_count + i;
-                if (!(res = LLVMBuildStore(
+                if (!(res = WAMR_BUILD_STORE(
                           comp_ctx->builder, block->result_phis[i],
                           LLVMGetParam(func_ctx->func, param_index)))) {
                     aot_set_last_error("llvm build store failed.");
@@ -369,7 +369,7 @@ handle_next_reachable_block(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         if (block->result_count) {
             /* Return the first return value */
             if (!(ret =
-                      LLVMBuildRet(comp_ctx->builder, block->result_phis[0]))) {
+                      WAMR_BUILD_RET(comp_ctx->builder, block->result_phis[0]))) {
                 aot_set_last_error("llvm build return failed.");
                 goto fail;
             }
@@ -380,7 +380,7 @@ handle_next_reachable_block(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 #endif
         }
         else {
-            if (!(ret = LLVMBuildRetVoid(comp_ctx->builder))) {
+            if (!(ret = WAMR_BUILD_RETVOID(comp_ctx->builder))) {
                 aot_set_last_error("llvm build return void failed.");
                 goto fail;
             }
@@ -878,8 +878,8 @@ check_suspend_flags(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     }
 
     if (!(terminate_flags =
-              LLVMBuildLoad2(comp_ctx->builder, I32_TYPE, terminate_addr,
-                             "terminate_flags"))) {
+              WAMR_BUILD_LOAD(comp_ctx->builder, I32_TYPE, terminate_addr,
+                              "terminate_flags"))) {
         aot_set_last_error("llvm build LOAD failed");
         return false;
     }
@@ -1303,7 +1303,7 @@ aot_compile_op_br_table(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         }
 
         /* Create switch IR */
-        if (!(value_switch = LLVMBuildSwitch(comp_ctx->builder, value_cmp,
+        if (!(value_switch = WAMR_BUILD_SWITCH(comp_ctx->builder, value_cmp,
                                              default_llvm_block, br_count))) {
             aot_set_last_error("llvm build switch failed.");
             return false;
@@ -1368,7 +1368,7 @@ aot_compile_op_return(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             result_index = block_func->result_count - 1 - i;
             POP(value, block_func->result_types[result_index]);
             param_index = func_type->param_count + result_index;
-            if (!(res = LLVMBuildStore(
+            if (!(res = WAMR_BUILD_STORE(
                       comp_ctx->builder, value,
                       LLVMGetParam(func_ctx->func, param_index)))) {
                 aot_set_last_error("llvm build store failed.");
@@ -1378,7 +1378,7 @@ aot_compile_op_return(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         }
         /* Return the first result value */
         POP(value, block_func->result_types[0]);
-        if (!(ret = LLVMBuildRet(comp_ctx->builder, value))) {
+        if (!(ret = WAMR_BUILD_RET(comp_ctx->builder, value))) {
             aot_set_last_error("llvm build return failed.");
             goto fail;
         }
@@ -1387,7 +1387,7 @@ aot_compile_op_return(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 #endif
     }
     else {
-        if (!(ret = LLVMBuildRetVoid(comp_ctx->builder))) {
+        if (!(ret = WAMR_BUILD_RETVOID(comp_ctx->builder))) {
             aot_set_last_error("llvm build return void failed.");
             goto fail;
         }

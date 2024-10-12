@@ -8,6 +8,7 @@
 
 #include "aot.h"
 #include "aot_llvm.h"
+#include "aot_debug.h"
 #include "../interpreter/wasm_interp.h"
 #include "../aot/aot_runtime.h"
 

@@ -30,7 +30,8 @@ simd_load(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx, uint32 align,
         return NULL;
     }
 
-    if (!(data = LLVMBuildLoad2(comp_ctx->builder, data_type, maddr, "data"))) {
+    if (!(data =
+              WAMR_BUILD_LOAD(comp_ctx->builder, data_type, maddr, "data"))) {
         HANDLE_FAILURE("LLVMBuildLoad");
         return NULL;
     }
@@ -296,8 +297,8 @@ simd_store(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx, uint32 align,
         return false;
     }
 
-    if (!(result = LLVMBuildStore(comp_ctx->builder, value, maddr))) {
-        HANDLE_FAILURE("LLVMBuildStore");
+    if (!(result = WAMR_BUILD_STORE(comp_ctx->builder, value, maddr))) {
+        HANDLE_FAILURE("WAMR_BUILD_STORE");
         return false;
     }
 

@@ -403,7 +403,7 @@ compile_rems(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     ADD_BASIC_BLOCK(no_overflow_block, "rems_no_overflow");
 
     /* Create condition br */
-    if (!LLVMBuildCondBr(comp_ctx->builder, overflow_cond, rems_end_block,
+    if (!WAMR_BUILD_CONDBR(comp_ctx->builder, overflow_cond, rems_end_block,
                          no_overflow_block)) {
         aot_set_last_error("llvm build cond br failed.");
         return false;
@@ -417,7 +417,7 @@ compile_rems(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
                                false);
 
     /* Jump to rems_end block */
-    if (!LLVMBuildBr(comp_ctx->builder, rems_end_block)) {
+    if (!WAMR_BUILD_BR(comp_ctx->builder, rems_end_block)) {
         aot_set_last_error("llvm build br failed.");
         return false;
     }

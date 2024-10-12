@@ -7,6 +7,7 @@
 #define _AOT_LLVM_H_
 
 #include "aot.h"
+#include "bh_hashmap.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm-c/Types.h"
 #include "llvm-c/Target.h"
@@ -42,10 +43,10 @@ extern "C" {
 #endif
 
 #if LLVM_VERSION_MAJOR < 14
-#define LLVMBuildLoad2(builder, type, value, name) \
+#define WAMR_BUILD_LOAD(builder, type, value, name) \
     LLVMBuildLoad(builder, value, name)
 
-#define LLVMBuildCall2(builder, type, func, args, num_args, name) \
+#define WAMR_BUILD_CALL(builder, type, func, args, num_args, name) \
     LLVMBuildCall(builder, func, args, num_args, name)
 
 #define LLVMBuildInBoundsGEP2(builder, type, ptr, indices, num_indices, name) \
@@ -366,11 +367,15 @@ typedef struct AOTCompContext {
     /* LLVM variables required to emit LLVM IR */
     LLVMContextRef context;
     LLVMBuilderRef builder;
-#if WASM_ENABLE_DEBUG_AOT
+
     LLVMDIBuilderRef debug_builder;
     LLVMMetadataRef debug_file;
     LLVMMetadataRef debug_comp_unit;
-#endif
+    LLVMValueRef cur_func;
+    int debug_file_fd;
+    int cur_line;
+    HashMap *func_debug_map;
+
     LLVMTargetMachineRef target_machine;
     char *target_cpu;
     char target_arch[16];
@@ -529,7 +534,8 @@ void
 aot_compiler_destroy(void);
 
 AOTCompContext *
-aot_create_comp_context(const AOTCompData *comp_data, aot_comp_option_t option);
+aot_create_comp_context(const AOTCompData *comp_data,
+                        const char *wasm_file_name, aot_comp_option_t option);
 
 void
 aot_destroy_comp_context(AOTCompContext *comp_ctx);

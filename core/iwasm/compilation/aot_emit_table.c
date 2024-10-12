@@ -114,7 +114,7 @@ aot_compile_op_elem_drop(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     }
 
     /* "" means return void */
-    if (!(ret_value = LLVMBuildCall2(comp_ctx->builder, func_type, func,
+    if (!(ret_value = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func,
                                      param_values, 2, ""))) {
         HANDLE_FAILURE("LLVMBuildCall");
         goto fail;
@@ -152,8 +152,8 @@ aot_check_table_access(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         goto fail;
     }
 
-    if (!(tbl_sz = LLVMBuildLoad2(comp_ctx->builder, I32_TYPE, tbl_sz,
-                                  "cur_size"))) {
+    if (!(tbl_sz = WAMR_BUILD_LOAD(comp_ctx->builder, I32_TYPE, tbl_sz,
+                                   "cur_size"))) {
         HANDLE_FAILURE("LLVMBuildLoad");
         goto fail;
     }
@@ -228,8 +228,8 @@ aot_compile_op_table_get(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             goto fail;
         }
 
-        if (!(table_elem = LLVMBuildLoad2(comp_ctx->builder, GC_REF_TYPE,
-                                          table_elem_addr, "table_elem"))) {
+        if (!(table_elem = WAMR_BUILD_LOAD(comp_ctx->builder, GC_REF_TYPE,
+                                           table_elem_addr, "table_elem"))) {
             HANDLE_FAILURE("LLVMBuildLoad");
             goto fail;
         }
@@ -251,8 +251,8 @@ aot_compile_op_table_get(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             goto fail;
         }
 
-        if (!(table_elem = LLVMBuildLoad2(comp_ctx->builder, INTPTR_T_TYPE,
-                                          table_elem_addr, "table_elem"))) {
+        if (!(table_elem = WAMR_BUILD_LOAD(comp_ctx->builder, INTPTR_T_TYPE,
+                                           table_elem_addr, "table_elem"))) {
             HANDLE_FAILURE("LLVMBuildLoad");
             goto fail;
         }
@@ -340,8 +340,8 @@ aot_compile_op_table_set(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         }
     }
 
-    if (!(LLVMBuildStore(comp_ctx->builder, val, table_elem_addr))) {
-        HANDLE_FAILURE("LLVMBuildStore");
+    if (!(WAMR_BUILD_STORE(comp_ctx->builder, val, table_elem_addr))) {
+        HANDLE_FAILURE("WAMR_BUILD_STORE");
         goto fail;
     }
 
@@ -391,7 +391,7 @@ aot_compile_op_table_init(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     POP_I32(param_values[5]);
 
     /* "" means return void */
-    if (!(LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values, 6,
+    if (!(WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values, 6,
                          ""))) {
         HANDLE_FAILURE("LLVMBuildCall");
         goto fail;
@@ -442,7 +442,7 @@ aot_compile_op_table_copy(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     POP_I32(param_values[5]);
 
     /* "" means return void */
-    if (!(LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values, 6,
+    if (!(WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values, 6,
                          ""))) {
         HANDLE_FAILURE("LLVMBuildCall");
         goto fail;
@@ -479,7 +479,7 @@ aot_compile_op_table_size(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     }
 
     if (!(tbl_sz =
-              LLVMBuildLoad2(comp_ctx->builder, I32_TYPE, tbl_sz, "tbl_sz"))) {
+              WAMR_BUILD_LOAD(comp_ctx->builder, I32_TYPE, tbl_sz, "tbl_sz"))) {
         HANDLE_FAILURE("LLVMBuildLoad");
         goto fail;
     }
@@ -539,7 +539,7 @@ aot_compile_op_table_grow(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         }
     }
 
-    if (!(ret = LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values,
+    if (!(ret = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
                                4, "table_grow"))) {
         HANDLE_FAILURE("LLVMBuildCall");
         goto fail;
@@ -604,7 +604,7 @@ aot_compile_op_table_fill(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     POP_I32(param_values[4]);
 
     /* "" means return void */
-    if (!(LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values, 5,
+    if (!(WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values, 5,
                          ""))) {
         HANDLE_FAILURE("LLVMBuildCall");
         goto fail;

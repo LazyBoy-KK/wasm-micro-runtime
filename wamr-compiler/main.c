@@ -698,7 +698,8 @@ main(int argc, char *argv[])
 
     bh_print_time("Begin to create compile context");
 
-    if (!(comp_ctx = aot_create_comp_context(comp_data, &option))) {
+    if (!(comp_ctx =
+              aot_create_comp_context(comp_data, wasm_file_name, &option))) {
         printf("%s\n", aot_get_last_error());
         goto fail4;
     }
@@ -709,6 +710,8 @@ main(int argc, char *argv[])
         printf("%s\n", aot_get_last_error());
         goto fail5;
     }
+
+    finish_debug_info(comp_ctx);
 
     switch (option.output_format) {
         case AOT_LLVMIR_UNOPT_FILE:

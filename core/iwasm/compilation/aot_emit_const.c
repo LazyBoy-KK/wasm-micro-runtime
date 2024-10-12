@@ -92,7 +92,7 @@ aot_compile_op_f32_const(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             aot_set_last_error("llvm build alloca failed.");
             return false;
         }
-        if (!LLVMBuildStore(comp_ctx->builder, I32_CONST((uint32)i32_const),
+        if (!WAMR_BUILD_STORE(comp_ctx->builder, I32_CONST((uint32)i32_const),
                             alloca)) {
             aot_set_last_error("llvm build store failed.");
             return false;
@@ -103,7 +103,7 @@ aot_compile_op_f32_const(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             return false;
         }
         if (!(value =
-                  LLVMBuildLoad2(comp_ctx->builder, F32_TYPE, alloca, ""))) {
+                  WAMR_BUILD_LOAD(comp_ctx->builder, F32_TYPE, alloca, ""))) {
             aot_set_last_error("llvm build load failed.");
             return false;
         }
@@ -147,7 +147,7 @@ aot_compile_op_f64_const(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         }
         value = I64_CONST((uint64)i64_const);
         CHECK_LLVM_CONST(value);
-        if (!LLVMBuildStore(comp_ctx->builder, value, alloca)) {
+        if (!WAMR_BUILD_STORE(comp_ctx->builder, value, alloca)) {
             aot_set_last_error("llvm build store failed.");
             return false;
         }
@@ -157,7 +157,7 @@ aot_compile_op_f64_const(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             return false;
         }
         if (!(value =
-                  LLVMBuildLoad2(comp_ctx->builder, F64_TYPE, alloca, ""))) {
+                  WAMR_BUILD_LOAD(comp_ctx->builder, F64_TYPE, alloca, ""))) {
             aot_set_last_error("llvm build load failed.");
             return false;
         }

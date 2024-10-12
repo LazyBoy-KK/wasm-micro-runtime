@@ -57,7 +57,8 @@ void
 aot_compiler_destroy(void);
 
 aot_comp_context_t
-aot_create_comp_context(aot_comp_data_t comp_data, aot_comp_option_t option);
+aot_create_comp_context(aot_comp_data_t comp_data, const char *wasm_file_name,
+                        aot_comp_option_t option);
 
 void
 aot_destroy_comp_context(aot_comp_context_t comp_ctx);
@@ -99,6 +100,9 @@ aot_destroy_aot_file(uint8_t *aot_file);
 
 char *
 aot_get_last_error();
+
+void
+finish_debug_info(aot_comp_context_t comp_ctx);
 
 uint32_t
 aot_get_plt_table_size();

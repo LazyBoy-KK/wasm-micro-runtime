@@ -243,7 +243,7 @@ store_value(AOTCompContext *comp_ctx, LLVMValueRef value, uint8 value_type,
         return false;
     }
 
-    if (!(res = LLVMBuildStore(comp_ctx->builder, value, value_ptr))) {
+    if (!(res = WAMR_BUILD_STORE(comp_ctx->builder, value, value_ptr))) {
         aot_set_last_error("llvm build store failed");
         return false;
     }
@@ -319,7 +319,7 @@ store_ref(AOTCompContext *comp_ctx, uint32 ref, LLVMValueRef cur_frame,
             break;
     }
 
-    if (!(res = LLVMBuildStore(comp_ctx->builder, value_ref, value_addr))) {
+    if (!(res = WAMR_BUILD_STORE(comp_ctx->builder, value_ref, value_addr))) {
         aot_set_last_error("llvm build store failed");
         return false;
     }
@@ -630,7 +630,7 @@ aot_gen_commit_sp_ip(AOTCompFrame *frame, bool commit_sp, bool commit_ip)
             return false;
         }
 
-        if (!LLVMBuildStore(comp_ctx->builder, value, value_ptr)) {
+        if (!WAMR_BUILD_STORE(comp_ctx->builder, value, value_ptr)) {
             aot_set_last_error("llvm build store failed");
             return false;
         }
@@ -673,7 +673,7 @@ aot_gen_commit_sp_ip(AOTCompFrame *frame, bool commit_sp, bool commit_ip)
             return false;
         }
 
-        if (!LLVMBuildStore(comp_ctx->builder, value, value_ptr)) {
+        if (!WAMR_BUILD_STORE(comp_ctx->builder, value, value_ptr)) {
             aot_set_last_error("llvm build store failed");
             return false;
         }
@@ -961,7 +961,7 @@ aot_compile_func(AOTCompContext *comp_ctx, uint32 func_index)
 #if WASM_ENABLE_DEBUG_AOT != 0
     LLVMMetadataRef location;
 #endif
-
+    comp_ctx->cur_func = func_ctx->func;
     if (comp_ctx->enable_aux_stack_frame) {
         if (!init_comp_frame(comp_ctx, func_ctx, func_index)) {
             return false;
@@ -3970,7 +3970,7 @@ aot_compile_wasm(AOTCompContext *comp_ctx)
            JIT: one is memory leak in do_ir_transform, the other is
            possible core dump. */
         bh_print_time("Begin to run llvm optimization passes");
-        aot_apply_llvm_new_pass_manager(comp_ctx, comp_ctx->module);
+        //        aot_apply_llvm_new_pass_manager(comp_ctx, comp_ctx->module);
         bh_print_time("Finish llvm optimization passes");
     }
 

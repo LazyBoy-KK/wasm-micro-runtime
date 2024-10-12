@@ -39,7 +39,7 @@ commit_ip(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         return false;
     }
 
-    if (!LLVMBuildStore(comp_ctx->builder, exce_ip, value_ptr)) {
+    if (!WAMR_BUILD_STORE(comp_ctx->builder, exce_ip, value_ptr)) {
         aot_set_last_error("llvm build store failed");
         return false;
     }
@@ -154,7 +154,7 @@ aot_emit_exception(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         /* Call the aot_set_exception_with_id() function */
         param_values[0] = func_ctx->aot_inst;
         param_values[1] = func_ctx->exception_id_phi;
-        if (!LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values, 2,
+        if (!WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values, 2,
                             "")) {
             aot_set_last_error("llvm build call failed.");
             return false;
@@ -204,14 +204,14 @@ aot_emit_exception(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 
     if (!is_cond_br) {
         /* not condition br, create br IR */
-        if (!LLVMBuildBr(comp_ctx->builder, func_ctx->got_exception_block)) {
+        if (!WAMR_BUILD_BR(comp_ctx->builder, func_ctx->got_exception_block)) {
             aot_set_last_error("llvm build br failed.");
             return false;
         }
     }
     else {
         /* Create condition br */
-        if (!LLVMBuildCondBr(comp_ctx->builder, cond_br_if,
+        if (!WAMR_BUILD_CONDBR(comp_ctx->builder, cond_br_if,
                              func_ctx->got_exception_block,
                              cond_br_else_block)) {
             aot_set_last_error("llvm build cond br failed.");

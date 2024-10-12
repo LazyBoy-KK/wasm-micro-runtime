@@ -4,6 +4,7 @@
  */
 
 #include "aot_llvm.h"
+#include "aot_debug.h"
 #include "aot_llvm_extra2.h"
 #include "aot_compiler.h"
 #include "aot_emit_exception.h"
@@ -11,6 +12,7 @@
 #include "../aot/aot_runtime.h"
 #include "../aot/aot_intrinsic.h"
 #include "../interpreter/wasm_runtime.h"
+#include <assert.h>
 
 #if WASM_ENABLE_DEBUG_AOT != 0
 #include "debug/dwarf_extractor.h"
@@ -135,8 +137,8 @@ create_basic_func_context(const AOTCompContext *comp_ctx,
     }
 
     /* Load aot inst */
-    if (!(func_ctx->aot_inst = LLVMBuildLoad2(comp_ctx->builder, OPQ_PTR_TYPE,
-                                              aot_inst_addr, "aot_inst"))) {
+    if (!(func_ctx->aot_inst = WAMR_BUILD_LOAD(comp_ctx->builder, OPQ_PTR_TYPE,
+                                               aot_inst_addr, "aot_inst"))) {
         aot_set_last_error("llvm build load failed");
         goto fail;
     }
@@ -322,6 +324,7 @@ aot_build_precheck_function(AOTCompContext *comp_ctx, LLVMModuleRef module,
     func_ctx->func = precheck_func;
     func_ctx->module = module;
     func_ctx->aot_func = comp_ctx->comp_data->funcs[func_index];
+    comp_ctx->cur_func = precheck_func;
 #if WASM_ENABLE_DEBUG_AOT != 0
     func_ctx->debug_func = NULL;
 #endif
@@ -384,7 +387,7 @@ aot_build_precheck_function(AOTCompContext *comp_ctx, LLVMModuleRef module,
             goto fail;
         }
         stack_sizes =
-            LLVMBuildLoad2(b, INT32_PTR_TYPE, stack_sizes_p, "stack_sizes");
+            WAMR_BUILD_LOAD(b, INT32_PTR_TYPE, stack_sizes_p, "stack_sizes");
         if (!stack_sizes) {
             goto fail;
         }
@@ -403,7 +406,7 @@ aot_build_precheck_function(AOTCompContext *comp_ctx, LLVMModuleRef module,
     if (!sizep) {
         goto fail;
     }
-    LLVMValueRef size32 = LLVMBuildLoad2(b, I32_TYPE, sizep, "size32");
+    LLVMValueRef size32 = WAMR_BUILD_LOAD(b, I32_TYPE, sizep, "size32");
     if (!size32) {
         goto fail;
     }
@@ -429,7 +432,7 @@ aot_build_precheck_function(AOTCompContext *comp_ctx, LLVMModuleRef module,
     if (!new_sp) {
         goto fail;
     }
-    if (!LLVMBuildBr(b, check_top_block)) {
+    if (!WAMR_BUILD_BR(b, check_top_block)) {
         goto fail;
     }
 
@@ -438,9 +441,9 @@ aot_build_precheck_function(AOTCompContext *comp_ctx, LLVMModuleRef module,
         /*
          * load native_stack_top_min from the exec_env
          */
-        LLVMValueRef top_min =
-            LLVMBuildLoad2(b, OPQ_PTR_TYPE, func_ctx->native_stack_top_min_addr,
-                           "native_stack_top_min");
+        LLVMValueRef top_min = WAMR_BUILD_LOAD(
+            b, OPQ_PTR_TYPE, func_ctx->native_stack_top_min_addr,
+            "native_stack_top_min");
         if (!top_min) {
             goto fail;
         }
@@ -468,7 +471,7 @@ aot_build_precheck_function(AOTCompContext *comp_ctx, LLVMModuleRef module,
         if (!cmp_top) {
             goto fail;
         }
-        if (!LLVMBuildCondBr(b, cmp_top, update_top_block,
+        if (!WAMR_BUILD_CONDBR(b, cmp_top, update_top_block,
                              call_wrapped_func_block)) {
             aot_set_last_error("llvm build cond br failed.");
             goto fail;
@@ -483,16 +486,16 @@ aot_build_precheck_function(AOTCompContext *comp_ctx, LLVMModuleRef module,
         if (!new_sp_ptr) {
             goto fail;
         }
-        if (!LLVMBuildStore(b, new_sp_ptr,
+        if (!WAMR_BUILD_STORE(b, new_sp_ptr,
                             func_ctx->native_stack_top_min_addr)) {
             goto fail;
         }
-        if (!LLVMBuildBr(b, stack_bound_check_block)) {
+        if (!WAMR_BUILD_BR(b, stack_bound_check_block)) {
             goto fail;
         }
     }
     else {
-        if (!LLVMBuildBr(b, stack_bound_check_block)) {
+        if (!WAMR_BUILD_BR(b, stack_bound_check_block)) {
             goto fail;
         }
     }
@@ -522,7 +525,7 @@ aot_build_precheck_function(AOTCompContext *comp_ctx, LLVMModuleRef module,
             goto fail;
     }
     else {
-        if (!LLVMBuildBr(b, call_wrapped_func_block)) {
+        if (!WAMR_BUILD_BR(b, call_wrapped_func_block)) {
             goto fail;
         }
     }
@@ -538,7 +541,7 @@ aot_build_precheck_function(AOTCompContext *comp_ctx, LLVMModuleRef module,
         name = "";
     }
     LLVMValueRef retval =
-        LLVMBuildCall2(b, func_type, wrapped_func, params, param_count, name);
+        WAMR_BUILD_CALL(b, func_type, wrapped_func, params, param_count, name);
     if (!retval) {
         goto fail;
     }
@@ -551,12 +554,12 @@ aot_build_precheck_function(AOTCompContext *comp_ctx, LLVMModuleRef module,
         LLVMSetTailCallKind(retval, LLVMTailCallKindTail);
     }
     if (ret_type == VOID_TYPE) {
-        if (!LLVMBuildRetVoid(b)) {
+        if (!WAMR_BUILD_RETVOID(b)) {
             goto fail;
         }
     }
     else {
-        if (!LLVMBuildRet(b, retval)) {
+        if (!WAMR_BUILD_RET(b, retval)) {
             goto fail;
         }
     }
@@ -700,6 +703,7 @@ aot_add_llvm_func(AOTCompContext *comp_ctx, LLVMModuleRef module,
         if (!precheck_func) {
             goto fail;
         }
+        create_function_debug_info(comp_ctx, precheck_func);
         /*
          * REVISIT: probably this breaks windows hw bound check
          * (the RtlAddFunctionTable stuff)
@@ -711,6 +715,7 @@ aot_add_llvm_func(AOTCompContext *comp_ctx, LLVMModuleRef module,
                                     prefix)))
         goto fail;
 
+    create_function_debug_info(comp_ctx, func);
     if (comp_ctx->is_indirect_mode) {
         /* avoid LUT relocations ("switch-table") */
         LLVMAttributeRef attr_no_jump_tables = LLVMCreateStringAttribute(
@@ -799,7 +804,7 @@ aot_add_llvm_func(AOTCompContext *comp_ctx, LLVMModuleRef module,
         }
 
         LLVMPositionBuilderAtEnd(comp_ctx->builder, func_begin);
-        if (!LLVMBuildRetVoid(comp_ctx->builder)) {
+        if (!WAMR_BUILD_RETVOID(comp_ctx->builder)) {
             aot_set_last_error("llvm build ret failed.");
             goto fail;
         }
@@ -904,8 +909,8 @@ create_argv_buf(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx)
         return false;
     }
 
-    if (!(func_ctx->argv_buf = LLVMBuildLoad2(comp_ctx->builder, INT32_PTR_TYPE,
-                                              argv_buf_addr, "argv_buf"))) {
+    if (!(func_ctx->argv_buf = WAMR_BUILD_LOAD(
+              comp_ctx->builder, INT32_PTR_TYPE, argv_buf_addr, "argv_buf"))) {
         aot_set_last_error("llvm build load failed");
         return false;
     }
@@ -927,8 +932,8 @@ create_native_stack_bound(const AOTCompContext *comp_ctx,
     }
 
     if (!(func_ctx->native_stack_bound =
-              LLVMBuildLoad2(comp_ctx->builder, OPQ_PTR_TYPE, stack_bound_addr,
-                             "native_stack_bound"))) {
+              WAMR_BUILD_LOAD(comp_ctx->builder, OPQ_PTR_TYPE, stack_bound_addr,
+                              "native_stack_bound"))) {
         aot_set_last_error("llvm build load failed");
         return false;
     }
@@ -973,9 +978,9 @@ create_aux_stack_info(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx)
         return false;
     }
 
-    if (!(func_ctx->aux_stack_bound =
-              LLVMBuildLoad2(comp_ctx->builder, INTPTR_T_TYPE,
-                             aux_stack_bound_addr, "aux_stack_bound_intptr"))) {
+    if (!(func_ctx->aux_stack_bound = WAMR_BUILD_LOAD(
+              comp_ctx->builder, INTPTR_T_TYPE, aux_stack_bound_addr,
+              "aux_stack_bound_intptr"))) {
         aot_set_last_error("llvm build load failed");
         return false;
     }
@@ -1002,8 +1007,8 @@ create_aux_stack_info(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx)
     }
 
     if (!(func_ctx->aux_stack_bottom =
-              LLVMBuildLoad2(comp_ctx->builder, INTPTR_T_TYPE,
-                             aux_stack_bottom_addr, "aux_stack_bottom"))) {
+              WAMR_BUILD_LOAD(comp_ctx->builder, INTPTR_T_TYPE,
+                              aux_stack_bottom_addr, "aux_stack_bottom"))) {
         aot_set_last_error("llvm build load failed");
         return false;
     }
@@ -1031,8 +1036,8 @@ create_aux_stack_frame(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx)
     }
 
     if (!(func_ctx->cur_frame =
-              LLVMBuildLoad2(comp_ctx->builder, OPQ_PTR_TYPE,
-                             func_ctx->cur_frame_ptr, "cur_frame"))) {
+              WAMR_BUILD_LOAD(comp_ctx->builder, OPQ_PTR_TYPE,
+                              func_ctx->cur_frame_ptr, "cur_frame"))) {
         aot_set_last_error("llvm build load failed");
         return false;
     }
@@ -1042,7 +1047,7 @@ create_aux_stack_frame(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx)
     if (!(wasm_stack_top_bound_ptr = LLVMBuildInBoundsGEP2(
               comp_ctx->builder, OPQ_PTR_TYPE, func_ctx->exec_env, &offset, 1,
               "wasm_stack_top_bound_ptr"))
-        || !(func_ctx->wasm_stack_top_bound = LLVMBuildLoad2(
+        || !(func_ctx->wasm_stack_top_bound = WAMR_BUILD_LOAD(
                  comp_ctx->builder, INT8_PTR_TYPE, wasm_stack_top_bound_ptr,
                  "wasm_stack_top_bound"))) {
         aot_set_last_error("load wasm_stack.top_boundary failed");
@@ -1073,8 +1078,8 @@ create_native_symbol(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx)
     }
 
     if (!(func_ctx->native_symbol =
-              LLVMBuildLoad2(comp_ctx->builder, OPQ_PTR_TYPE,
-                             native_symbol_addr, "native_symbol_tmp"))) {
+              WAMR_BUILD_LOAD(comp_ctx->builder, OPQ_PTR_TYPE,
+                              native_symbol_addr, "native_symbol_tmp"))) {
         aot_set_last_error("llvm build bit cast failed");
         return false;
     }
@@ -1108,7 +1113,7 @@ create_local_variables(const AOTCompData *comp_data,
             aot_set_last_error("llvm build alloca failed.");
             return false;
         }
-        if (!LLVMBuildStore(comp_ctx->builder, LLVMGetParam(func_ctx->func, j),
+        if (!WAMR_BUILD_STORE(comp_ctx->builder, LLVMGetParam(func_ctx->func, j),
                             func_ctx->locals[i])) {
             aot_set_last_error("llvm build store failed.");
             return false;
@@ -1176,7 +1181,7 @@ create_local_variables(const AOTCompData *comp_data,
                 bh_assert(0);
                 break;
         }
-        if (!LLVMBuildStore(comp_ctx->builder, local_value,
+        if (!WAMR_BUILD_STORE(comp_ctx->builder, local_value,
                             func_ctx->locals[aot_func_type->param_count + i])) {
             aot_set_last_error("llvm build store failed.");
             return false;
@@ -1244,8 +1249,8 @@ create_memory_info(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         }
         /* aot_inst->memories[0] */
         if (!(shared_mem_addr =
-                  LLVMBuildLoad2(comp_ctx->builder, OPQ_PTR_TYPE,
-                                 shared_mem_addr, "shared_mem_addr"))) {
+                  WAMR_BUILD_LOAD(comp_ctx->builder, OPQ_PTR_TYPE,
+                                  shared_mem_addr, "shared_mem_addr"))) {
             aot_set_last_error("llvm build load failed");
             return false;
         }
@@ -1256,8 +1261,8 @@ create_memory_info(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             return false;
         }
         if (!(shared_mem_addr =
-                  LLVMBuildLoad2(comp_ctx->builder, OPQ_PTR_TYPE,
-                                 shared_mem_addr, "shared_mem_addr"))) {
+                  WAMR_BUILD_LOAD(comp_ctx->builder, OPQ_PTR_TYPE,
+                                  shared_mem_addr, "shared_mem_addr"))) {
             aot_set_last_error("llvm build load failed");
             return false;
         }
@@ -1347,20 +1352,20 @@ create_memory_info(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         return false;
     }
     if (mem_space_unchanged) {
-        if (!(func_ctx->mem_info[0].mem_base_addr = LLVMBuildLoad2(
+        if (!(func_ctx->mem_info[0].mem_base_addr = WAMR_BUILD_LOAD(
                   comp_ctx->builder, OPQ_PTR_TYPE,
                   func_ctx->mem_info[0].mem_base_addr, "mem_base_addr"))) {
             aot_set_last_error("llvm build load failed");
             return false;
         }
         if (!(func_ctx->mem_info[0].mem_cur_page_count_addr =
-                  LLVMBuildLoad2(comp_ctx->builder, I32_TYPE,
-                                 func_ctx->mem_info[0].mem_cur_page_count_addr,
-                                 "mem_cur_page_count"))) {
+                  WAMR_BUILD_LOAD(comp_ctx->builder, I32_TYPE,
+                                  func_ctx->mem_info[0].mem_cur_page_count_addr,
+                                  "mem_cur_page_count"))) {
             aot_set_last_error("llvm build load failed");
             return false;
         }
-        if (!(func_ctx->mem_info[0].mem_data_size_addr = LLVMBuildLoad2(
+        if (!(func_ctx->mem_info[0].mem_data_size_addr = WAMR_BUILD_LOAD(
                   comp_ctx->builder, I64_TYPE,
                   func_ctx->mem_info[0].mem_data_size_addr, "mem_data_size"))) {
             aot_set_last_error("llvm build load failed");
@@ -1371,7 +1376,7 @@ create_memory_info(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     else if (is_shared_memory) {
         /* The base address for shared memory will never changed,
             we can load the value here */
-        if (!(func_ctx->mem_info[0].mem_base_addr = LLVMBuildLoad2(
+        if (!(func_ctx->mem_info[0].mem_base_addr = WAMR_BUILD_LOAD(
                   comp_ctx->builder, OPQ_PTR_TYPE,
                   func_ctx->mem_info[0].mem_base_addr, "mem_base_addr"))) {
             aot_set_last_error("llvm build load failed");
@@ -1400,7 +1405,7 @@ create_memory_info(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         return false;
     }
     if (mem_space_unchanged) {
-        if (!(func_ctx->mem_info[0].mem_bound_check_1byte = LLVMBuildLoad2(
+        if (!(func_ctx->mem_info[0].mem_bound_check_1byte = WAMR_BUILD_LOAD(
                   comp_ctx->builder,
                   (comp_ctx->pointer_size == sizeof(uint64)) ? I64_TYPE
                                                              : I32_TYPE,
@@ -1426,7 +1431,7 @@ create_memory_info(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         return false;
     }
     if (mem_space_unchanged) {
-        if (!(func_ctx->mem_info[0].mem_bound_check_2bytes = LLVMBuildLoad2(
+        if (!(func_ctx->mem_info[0].mem_bound_check_2bytes = WAMR_BUILD_LOAD(
                   comp_ctx->builder,
                   (comp_ctx->pointer_size == sizeof(uint64)) ? I64_TYPE
                                                              : I32_TYPE,
@@ -1452,7 +1457,7 @@ create_memory_info(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         return false;
     }
     if (mem_space_unchanged) {
-        if (!(func_ctx->mem_info[0].mem_bound_check_4bytes = LLVMBuildLoad2(
+        if (!(func_ctx->mem_info[0].mem_bound_check_4bytes = WAMR_BUILD_LOAD(
                   comp_ctx->builder,
                   (comp_ctx->pointer_size == sizeof(uint64)) ? I64_TYPE
                                                              : I32_TYPE,
@@ -1478,7 +1483,7 @@ create_memory_info(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         return false;
     }
     if (mem_space_unchanged) {
-        if (!(func_ctx->mem_info[0].mem_bound_check_8bytes = LLVMBuildLoad2(
+        if (!(func_ctx->mem_info[0].mem_bound_check_8bytes = WAMR_BUILD_LOAD(
                   comp_ctx->builder,
                   (comp_ctx->pointer_size == sizeof(uint64)) ? I64_TYPE
                                                              : I32_TYPE,
@@ -1504,7 +1509,7 @@ create_memory_info(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         return false;
     }
     if (mem_space_unchanged) {
-        if (!(func_ctx->mem_info[0].mem_bound_check_16bytes = LLVMBuildLoad2(
+        if (!(func_ctx->mem_info[0].mem_bound_check_16bytes = WAMR_BUILD_LOAD(
                   comp_ctx->builder,
                   (comp_ctx->pointer_size == sizeof(uint64)) ? I64_TYPE
                                                              : I32_TYPE,
@@ -1564,8 +1569,8 @@ create_func_type_indexes(const AOTCompContext *comp_ctx,
     }
 
     func_ctx->func_type_indexes =
-        LLVMBuildLoad2(comp_ctx->builder, INT32_PTR_TYPE,
-                       func_ctx->func_type_indexes, "func_type_indexes");
+        WAMR_BUILD_LOAD(comp_ctx->builder, INT32_PTR_TYPE,
+                        func_ctx->func_type_indexes, "func_type_indexes");
     if (!func_ctx->func_type_indexes) {
         aot_set_last_error("llvm build load failed.");
         return false;
@@ -1594,8 +1599,8 @@ create_func_ptrs(const AOTCompContext *comp_ctx, AOTFuncContext *func_ctx)
         return false;
     }
 
-    func_ctx->func_ptrs = LLVMBuildLoad2(comp_ctx->builder, OPQ_PTR_TYPE,
-                                         func_ctx->func_ptrs, "func_ptrs_ptr");
+    func_ctx->func_ptrs = WAMR_BUILD_LOAD(comp_ctx->builder, OPQ_PTR_TYPE,
+                                          func_ctx->func_ptrs, "func_ptrs_ptr");
     if (!func_ctx->func_ptrs) {
         aot_set_last_error("llvm build load failed.");
         return false;
@@ -1756,6 +1761,7 @@ aot_create_func_context(const AOTCompData *comp_data, AOTCompContext *comp_ctx,
     /* Add local variables */
     LLVMPositionBuilderAtEnd(comp_ctx->builder, aot_block->llvm_entry_block);
 
+    comp_ctx->cur_func = func_ctx->func;
     if (!create_basic_func_context(comp_ctx, func_ctx)) {
         goto fail;
     }
@@ -2469,7 +2475,8 @@ aot_compiler_destroy(void)
 }
 
 AOTCompContext *
-aot_create_comp_context(const AOTCompData *comp_data, aot_comp_option_t option)
+aot_create_comp_context(const AOTCompData *comp_data,
+                        const char *wasm_file_name, aot_comp_option_t option)
 {
     AOTCompContext *comp_ctx, *ret = NULL;
     LLVMTargetRef target;
@@ -2542,27 +2549,13 @@ aot_create_comp_context(const AOTCompData *comp_data, aot_comp_option_t option)
         goto fail;
     }
 
-#if WASM_ENABLE_DEBUG_AOT != 0
-    if (!(comp_ctx->debug_builder = LLVMCreateDIBuilder(comp_ctx->module))) {
-        aot_set_last_error("create LLVM Debug Infor builder failed.");
-        goto fail;
-    }
+    assert(init_debug_ctx(comp_ctx, wasm_file_name) == true);
 
+#if WASM_ENABLE_DEBUG_AOT != 0
     LLVMAddModuleFlag(
         comp_ctx->module, LLVMModuleFlagBehaviorWarning, "Debug Info Version",
         strlen("Debug Info Version"),
         LLVMValueAsMetadata(LLVMConstInt(LLVMInt32Type(), 3, false)));
-
-    comp_ctx->debug_file = dwarf_gen_file_info(comp_ctx);
-    if (!comp_ctx->debug_file) {
-        aot_set_last_error("dwarf generate file info failed");
-        goto fail;
-    }
-    comp_ctx->debug_comp_unit = dwarf_gen_comp_unit_info(comp_ctx);
-    if (!comp_ctx->debug_comp_unit) {
-        aot_set_last_error("dwarf generate compile unit info failed");
-        goto fail;
-    }
 #endif
 
     if (option->enable_bulk_memory)
@@ -3637,28 +3630,28 @@ aot_build_zero_function_ret(const AOTCompContext *comp_ctx,
     if (func_type->result_count) {
         switch (func_type->types[func_type->param_count]) {
             case VALUE_TYPE_I32:
-                ret = LLVMBuildRet(comp_ctx->builder, I32_ZERO);
+                ret = WAMR_BUILD_RET(comp_ctx->builder, I32_ZERO);
                 break;
             case VALUE_TYPE_I64:
-                ret = LLVMBuildRet(comp_ctx->builder, I64_ZERO);
+                ret = WAMR_BUILD_RET(comp_ctx->builder, I64_ZERO);
                 break;
             case VALUE_TYPE_F32:
-                ret = LLVMBuildRet(comp_ctx->builder, F32_ZERO);
+                ret = WAMR_BUILD_RET(comp_ctx->builder, F32_ZERO);
                 break;
             case VALUE_TYPE_F64:
-                ret = LLVMBuildRet(comp_ctx->builder, F64_ZERO);
+                ret = WAMR_BUILD_RET(comp_ctx->builder, F64_ZERO);
                 break;
             case VALUE_TYPE_V128:
                 ret =
-                    LLVMBuildRet(comp_ctx->builder, LLVM_CONST(i64x2_vec_zero));
+                    WAMR_BUILD_RET(comp_ctx->builder, LLVM_CONST(i64x2_vec_zero));
                 break;
             case VALUE_TYPE_FUNCREF:
             case VALUE_TYPE_EXTERNREF:
                 if (comp_ctx->enable_ref_types)
-                    ret = LLVMBuildRet(comp_ctx->builder, REF_NULL);
+                    ret = WAMR_BUILD_RET(comp_ctx->builder, REF_NULL);
 #if WASM_ENABLE_GC != 0
                 else if (comp_ctx->enable_gc)
-                    ret = LLVMBuildRet(comp_ctx->builder, GC_REF_NULL);
+                    ret = WAMR_BUILD_RET(comp_ctx->builder, GC_REF_NULL);
 #endif
                 else
                     bh_assert(0);
@@ -3683,7 +3676,7 @@ aot_build_zero_function_ret(const AOTCompContext *comp_ctx,
             case REF_TYPE_STRINGVIEWITER:
 #endif
                 bh_assert(comp_ctx->enable_gc);
-                ret = LLVMBuildRet(comp_ctx->builder, GC_REF_NULL);
+                ret = WAMR_BUILD_RET(comp_ctx->builder, GC_REF_NULL);
                 break;
 #endif
             default:
@@ -3691,7 +3684,7 @@ aot_build_zero_function_ret(const AOTCompContext *comp_ctx,
         }
     }
     else {
-        ret = LLVMBuildRetVoid(comp_ctx->builder);
+        ret = WAMR_BUILD_RETVOID(comp_ctx->builder);
     }
 
     if (!ret) {
@@ -3781,7 +3774,7 @@ __call_llvm_intrinsic(const AOTCompContext *comp_ctx,
 #endif
 
     /* Call the LLVM intrinsic function */
-    if (!(ret = LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values,
+    if (!(ret = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
                                (uint32)param_count, "call"))) {
         aot_set_last_error("llvm build intrinsic call failed.");
         return NULL;
@@ -3873,7 +3866,7 @@ aot_get_func_from_table(const AOTCompContext *comp_ctx, LLVMValueRef base,
     }
 
     func =
-        LLVMBuildLoad2(comp_ctx->builder, OPQ_PTR_TYPE, func_addr, "func_tmp");
+        WAMR_BUILD_LOAD(comp_ctx->builder, OPQ_PTR_TYPE, func_addr, "func_tmp");
 
     if (func == NULL) {
         aot_set_last_error("get function pointer failed.");
@@ -3955,8 +3948,8 @@ aot_load_const_from_table(AOTCompContext *comp_ctx, LLVMValueRef base,
         return NULL;
     }
 
-    if (!(const_value = LLVMBuildLoad2(comp_ctx->builder, const_type,
-                                       const_addr, "const_value"))) {
+    if (!(const_value = WAMR_BUILD_LOAD(comp_ctx->builder, const_type,
+                                        const_addr, "const_value"))) {
         aot_set_last_error("load const failed.");
         return NULL;
     }

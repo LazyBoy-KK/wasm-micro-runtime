@@ -47,7 +47,7 @@
 
 #define BUILD_COND_BR(value_if, block_then, block_else)               \
     do {                                                              \
-        if (!LLVMBuildCondBr(comp_ctx->builder, value_if, block_then, \
+        if (!WAMR_BUILD_CONDBR(comp_ctx->builder, value_if, block_then, \
                              block_else)) {                           \
             aot_set_last_error("llvm build cond br failed.");         \
             goto fail;                                                \
@@ -59,7 +59,7 @@
 
 #define BUILD_BR(llvm_block)                               \
     do {                                                   \
-        if (!LLVMBuildBr(comp_ctx->builder, llvm_block)) { \
+        if (!WAMR_BUILD_BR(comp_ctx->builder, llvm_block)) { \
             aot_set_last_error("llvm build br failed.");   \
             goto fail;                                     \
         }                                                  \
@@ -109,7 +109,7 @@ aot_call_aot_create_func_obj(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     param_values[2] = I8_CONST(1);
     param_values[3] = I8_PTR_NULL;
     param_values[4] = I32_ZERO;
-    if (!(gc_obj = LLVMBuildCall2(comp_ctx->builder, func_type, func,
+    if (!(gc_obj = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func,
                                   param_values, 5, "call"))) {
         aot_set_last_error("llvm build call failed.");
         return false;
@@ -123,7 +123,7 @@ aot_call_aot_create_func_obj(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     LLVMMoveBasicBlockAfter(init_gc_obj_fail, block_curr);
     LLVMMoveBasicBlockAfter(init_gc_obj_succ, block_curr);
 
-    if (!LLVMBuildCondBr(comp_ctx->builder, cmp_gc_obj, init_gc_obj_succ,
+    if (!WAMR_BUILD_CONDBR(comp_ctx->builder, cmp_gc_obj, init_gc_obj_succ,
                          init_gc_obj_fail)) {
         aot_set_last_error("llvm build cond br failed.");
         goto fail;
@@ -168,7 +168,7 @@ aot_call_aot_obj_is_instance_of(AOTCompContext *comp_ctx,
     param_values[1] = gc_obj;
     param_values[2] = heap_type;
 
-    if (!(res = LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values,
+    if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
                                3, "call"))) {
         aot_set_last_error("llvm build call failed.");
         goto fail;
@@ -198,7 +198,7 @@ aot_call_wasm_obj_is_type_of(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     /* Call function wasm_obj_is_type_of() */
     param_values[0] = gc_obj;
     param_values[1] = heap_type;
-    if (!(res = LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values,
+    if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
                                2, "call"))) {
         aot_set_last_error("llvm build call failed.");
         goto fail;
@@ -230,7 +230,7 @@ aot_call_aot_rtt_type_new(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     /* Call function llvm_jit/aot_rtt_type_new() */
     param_values[0] = func_ctx->aot_inst;
     param_values[1] = type_index;
-    if (!(res = LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values,
+    if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
                                2, "call"))) {
         aot_set_last_error("llvm build call failed.");
         goto fail;
@@ -283,7 +283,7 @@ aot_call_wasm_struct_obj_new(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     /* Call function wasm_struct_obj_new() */
     param_values[0] = func_ctx->exec_env;
     param_values[1] = rtt_type;
-    if (!(res = LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values,
+    if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
                                2, "call"))) {
         aot_set_last_error("llvm build call failed.");
         goto fail;
@@ -392,7 +392,7 @@ aot_struct_obj_set_field(AOTCompContext *comp_ctx, LLVMValueRef struct_obj,
     }
 
     if (!(res =
-              LLVMBuildStore(comp_ctx->builder, field_value, field_data_ptr))) {
+              WAMR_BUILD_STORE(comp_ctx->builder, field_value, field_data_ptr))) {
         aot_set_last_error("llvm build store failed.");
         goto fail;
     }
@@ -440,8 +440,8 @@ aot_struct_obj_get_field(AOTCompContext *comp_ctx, LLVMValueRef struct_obj,
         goto fail;
     }
 
-    if (!(field_value = LLVMBuildLoad2(comp_ctx->builder, field_data_type,
-                                       field_data_ptr, "field_value"))) {
+    if (!(field_value = WAMR_BUILD_LOAD(comp_ctx->builder, field_data_type,
+                                        field_data_ptr, "field_value"))) {
         aot_set_last_error("llvm build load failed.");
         goto fail;
     }
@@ -725,7 +725,7 @@ aot_call_wasm_array_obj_new(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         aot_set_last_error("llvm build alloca failed.");
         goto fail;
     }
-    if (!LLVMBuildStore(comp_ctx->builder, array_elem, array_elem_ptr)) {
+    if (!WAMR_BUILD_STORE(comp_ctx->builder, array_elem, array_elem_ptr)) {
         aot_set_last_error("llvm build store failed.");
         goto fail;
     }
@@ -748,7 +748,7 @@ aot_call_wasm_array_obj_new(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     param_values[1] = rtt_type;
     param_values[2] = array_len;
     param_values[3] = array_elem_ptr;
-    if (!(res = LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values,
+    if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
                                4, "call"))) {
         aot_set_last_error("llvm build call failed.");
         goto fail;
@@ -903,7 +903,7 @@ aot_array_obj_set_elem(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         goto fail;
     }
 
-    if (!(res = LLVMBuildStore(comp_ctx->builder, array_elem, elem_data_ptr))) {
+    if (!(res = WAMR_BUILD_STORE(comp_ctx->builder, array_elem, elem_data_ptr))) {
         aot_set_last_error("llvm build store failed.");
         goto fail;
     }
@@ -952,7 +952,7 @@ aot_call_aot_array_init_with_data(
     param_values[3] = array_obj;
     param_values[4] = elem_size;
     param_values[5] = array_len;
-    if (!(res = LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values,
+    if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
                                6, "call"))) {
         aot_set_last_error("llvm build call failed.");
         goto fail;
@@ -1027,8 +1027,8 @@ aot_call_wasm_array_get_elem(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         goto fail;
     }
 
-    if (!(array_elem = LLVMBuildLoad2(comp_ctx->builder, elem_data_type,
-                                      elem_data_ptr, "array_elem"))) {
+    if (!(array_elem = WAMR_BUILD_LOAD(comp_ctx->builder, elem_data_type,
+                                       elem_data_ptr, "array_elem"))) {
         aot_set_last_error("llvm build load failed.");
         goto fail;
     }
@@ -1092,8 +1092,8 @@ aot_array_obj_length(AOTCompContext *comp_ctx, LLVMValueRef array_obj,
         goto fail;
     }
 
-    if (!(array_len = LLVMBuildLoad2(comp_ctx->builder, I32_TYPE, array_len,
-                                     "array_obj_length"))) {
+    if (!(array_len = WAMR_BUILD_LOAD(comp_ctx->builder, I32_TYPE, array_len,
+                                      "array_obj_length"))) {
         aot_set_last_error("llvm build load failed.");
         goto fail;
     }
@@ -1554,7 +1554,7 @@ aot_compile_op_array_fill(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         LLVMSetAlignment(loop_counter_addr, 4);
     }
 
-    if (!LLVMBuildStore(comp_ctx->builder, offset, loop_counter_addr)) {
+    if (!WAMR_BUILD_STORE(comp_ctx->builder, offset, loop_counter_addr)) {
         aot_set_last_error("llvm build store failed.");
         goto fail;
     }
@@ -1563,8 +1563,8 @@ aot_compile_op_array_fill(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     SET_BUILDER_POS(fill_loop_header);
 
     if (!(loop_counter_val =
-              LLVMBuildLoad2(comp_ctx->builder, I32_TYPE, loop_counter_addr,
-                             "fill_loop_counter"))) {
+              WAMR_BUILD_LOAD(comp_ctx->builder, I32_TYPE, loop_counter_addr,
+                              "fill_loop_counter"))) {
         aot_set_last_error("llvm build load failed.");
         goto fail;
     }
@@ -1585,7 +1585,7 @@ aot_compile_op_array_fill(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         goto fail;
     }
 
-    if (!LLVMBuildStore(comp_ctx->builder, loop_counter_val,
+    if (!WAMR_BUILD_STORE(comp_ctx->builder, loop_counter_val,
                         loop_counter_addr)) {
         aot_set_last_error("llvm build store failed.");
         goto fail;
@@ -1624,7 +1624,7 @@ aot_call_wasm_array_obj_copy(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     param_values[2] = src_obj;
     param_values[3] = src_offset;
     param_values[4] = len;
-    if (!LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values, 5,
+    if (!WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values, 5,
                         "")) {
         aot_set_last_error("llvm build call failed.");
         goto fail;
@@ -1980,7 +1980,7 @@ aot_call_wasm_externref_obj_to_internal_obj(AOTCompContext *comp_ctx,
 
     /* Call function wasm_externref_obj_to_internal_obj */
     param_values[0] = externref_obj;
-    if (!(res = LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values,
+    if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
                                1, "call"))) {
         aot_set_last_error("llvm build call failed.");
         goto fail;
@@ -2062,7 +2062,7 @@ aot_call_wasm_internal_obj_to_external_obj(AOTCompContext *comp_ctx,
     /* Call function wasm_internal_obj_to_externref_obj() */
     param_values[0] = func_ctx->exec_env;
     param_values[1] = gc_obj;
-    if (!(res = LLVMBuildCall2(comp_ctx->builder, func_type, func, param_values,
+    if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
                                2, "call"))) {
         aot_set_last_error("llvm build call failed.");
         goto fail;
