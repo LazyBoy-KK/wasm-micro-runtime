@@ -102,7 +102,7 @@ check_exception_thrown(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx)
     LLVMPositionBuilderAtEnd(comp_ctx->builder, block_curr);
     /* Create condition br */
     if (!WAMR_BUILD_CONDBR(comp_ctx->builder, cmp, check_exce_succ,
-                         func_ctx->func_return_block)) {
+                           func_ctx->func_return_block)) {
         aot_set_last_error("llvm build cond br failed.");
         return false;
     }
@@ -142,7 +142,7 @@ check_call_return(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     LLVMPositionBuilderAtEnd(comp_ctx->builder, block_curr);
     /* Create condition br */
     if (!WAMR_BUILD_CONDBR(comp_ctx->builder, cmp, check_call_succ,
-                         func_ctx->func_return_block)) {
+                           func_ctx->func_return_block)) {
         aot_set_last_error("llvm build cond br failed.");
         return false;
     }
@@ -241,7 +241,7 @@ call_aot_invoke_native_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         }
 
         if (!(res = WAMR_BUILD_STORE(comp_ctx->builder, param_values[i],
-                                   elem_ptr))) {
+                                     elem_ptr))) {
             aot_set_last_error("llvm build store failed.");
             return false;
         }
@@ -263,7 +263,7 @@ call_aot_invoke_native_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 
     /* call aot_invoke_native() function */
     if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func,
-                               func_param_values, 4, "res"))) {
+                                func_param_values, 4, "res"))) {
         aot_set_last_error("llvm build call failed.");
         return false;
     }
@@ -434,8 +434,8 @@ call_aot_invoke_c_api_native(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     }
 
     /* Call the function */
-    if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
-                               6, "call"))) {
+    if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func,
+                                param_values, 6, "call"))) {
         aot_set_last_error("LLVM build call failed.");
         goto fail;
     }
@@ -522,7 +522,7 @@ call_aot_alloc_frame_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 
     if (!(ret_value =
               WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
-                             2, "call_aot_alloc_frame"))) {
+                              2, "call_aot_alloc_frame"))) {
         aot_set_last_error("llvm build call failed.");
         return false;
     }
@@ -540,7 +540,7 @@ call_aot_alloc_frame_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     LLVMMoveBasicBlockAfter(frame_alloc_success, block_curr);
 
     if (!WAMR_BUILD_CONDBR(comp_ctx->builder, ret_value, frame_alloc_success,
-                         frame_alloc_fail)) {
+                           frame_alloc_fail)) {
         aot_set_last_error("llvm build cond br failed.");
         return false;
     }
@@ -717,7 +717,7 @@ alloc_frame_for_aot_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             return false;
         }
         if (!WAMR_BUILD_STORE(comp_ctx->builder, wasm_stack_top_new,
-                            wasm_stack_top_ptr)) {
+                              wasm_stack_top_ptr)) {
             aot_set_last_error("llvm build store failed");
             return false;
         }
@@ -788,7 +788,8 @@ alloc_frame_for_aot_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
                 aot_set_last_error("llvm build in bounds gep failed");
                 return false;
             }
-            if (!WAMR_BUILD_STORE(comp_ctx->builder, frame_ref, frame_ref_ptr)) {
+            if (!WAMR_BUILD_STORE(comp_ctx->builder, frame_ref,
+                                  frame_ref_ptr)) {
                 aot_set_last_error("llvm build store failed");
                 return false;
             }
@@ -822,7 +823,7 @@ alloc_frame_for_aot_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
                             comp_ctx->builder, INT8_TYPE, frame_ref, &offset, 1,
                             "frame_ref_ptr");
                         if (!WAMR_BUILD_STORE(comp_ctx->builder, I8_ONE,
-                                            frame_ref_ptr)) {
+                                              frame_ref_ptr)) {
                             aot_set_last_error("llvm build store failed");
                             return false;
                         }
@@ -841,7 +842,7 @@ alloc_frame_for_aot_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
                             comp_ctx->builder, INT8_TYPE, frame_ref, &offset, 1,
                             "frame_ref_ptr");
                         if (!WAMR_BUILD_STORE(comp_ctx->builder, I8_ZERO,
-                                            frame_ref_ptr)) {
+                                              frame_ref_ptr)) {
                             aot_set_last_error("llvm build store failed");
                             return false;
                         }
@@ -858,7 +859,7 @@ alloc_frame_for_aot_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
                     comp_ctx->builder, INT8_TYPE, frame_ref, &offset, 1,
                     "frame_ref_ptr");
                 if (!WAMR_BUILD_STORE(comp_ctx->builder, I8_ZERO,
-                                    frame_ref_ptr)) {
+                                      frame_ref_ptr)) {
                     aot_set_last_error("llvm build store failed");
                     return false;
                 }
@@ -1026,7 +1027,7 @@ alloc_frame_for_aot_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         param_values[1] = I8_ONE;
 
         if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func,
-                                   param_values, 2, ""))) {
+                                    param_values, 2, ""))) {
             aot_set_last_error("llvm build call failed.");
             return false;
         }
@@ -1114,7 +1115,7 @@ free_frame_for_aot_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx)
         param_values[1] = I8_ZERO;
 
         if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func,
-                                   param_values, 2, ""))) {
+                                    param_values, 2, ""))) {
             aot_set_last_error("llvm build call failed.");
             return false;
         }
@@ -1129,7 +1130,8 @@ free_frame_for_aot_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx)
         }
 
         /* exec_env->wasm_stack.top = cur_frame */
-        if (!WAMR_BUILD_STORE(comp_ctx->builder, cur_frame, wasm_stack_top_ptr)) {
+        if (!WAMR_BUILD_STORE(comp_ctx->builder, cur_frame,
+                              wasm_stack_top_ptr)) {
             aot_set_last_error("llvm build store failed");
             return false;
         }
@@ -1137,7 +1139,7 @@ free_frame_for_aot_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx)
 
     /* exec_env->cur_frame = prev_frame */
     if (!WAMR_BUILD_STORE(comp_ctx->builder, func_ctx->cur_frame,
-                        cur_frame_ptr)) {
+                          cur_frame_ptr)) {
         aot_set_last_error("llvm build store failed");
         return false;
     }
@@ -1232,7 +1234,7 @@ check_app_addr_and_convert(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 
     /* call aot_check_app_addr_and_convert() function */
     if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func,
-                               func_param_values, 5, "res"))) {
+                                func_param_values, 5, "res"))) {
         aot_set_last_error("llvm build call failed.");
         return false;
     }
@@ -1512,6 +1514,7 @@ aot_compile_op_call(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         }
     }
 
+    comp_ctx->debug_inst_kind = Call;
     if (func_idx < import_func_count) {
         if (comp_ctx->enable_aux_stack_frame
             && !commit_params_to_frame_of_import_func(
@@ -1787,6 +1790,7 @@ aot_compile_op_call(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             && !check_exception_thrown(comp_ctx, func_ctx))
             goto fail;
     }
+    comp_ctx->debug_inst_kind = Other;
 
     if (func_type->result_count > 0 && !quick_invoke_c_api_import) {
         /* Push the first result to stack */
@@ -1854,7 +1858,7 @@ call_aot_func_type_is_super_of_func(AOTCompContext *comp_ctx,
 
     if (!(ret_value =
               WAMR_BUILD_CALL(comp_ctx->builder, func_type, func, param_values,
-                             3, "call_aot_func_type_is_super_of"))) {
+                              3, "call_aot_func_type_is_super_of"))) {
         aot_set_last_error("llvm build call failed.");
         return NULL;
     }
@@ -1968,7 +1972,7 @@ call_aot_call_indirect_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         }
 
         if (!(res = WAMR_BUILD_STORE(comp_ctx->builder, param_values[i],
-                                   elem_ptr))) {
+                                     elem_ptr))) {
             aot_set_last_error("llvm build store failed.");
             return false;
         }
@@ -1991,7 +1995,7 @@ call_aot_call_indirect_func(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 
     /* call aot_call_indirect() function */
     if (!(res = WAMR_BUILD_CALL(comp_ctx->builder, func_type, func,
-                               func_param_values, 5, "res"))) {
+                                func_param_values, 5, "res"))) {
         aot_set_last_error("llvm build call failed.");
         return false;
     }
@@ -2469,7 +2473,7 @@ aot_compile_op_call_indirect(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     /* If func_idx < import_func_count, jump to call import block,
        else jump to call non-import block */
     if (!WAMR_BUILD_CONDBR(comp_ctx->builder, cmp_func_idx, block_call_import,
-                         block_call_non_import)) {
+                           block_call_non_import)) {
         aot_set_last_error("llvm build cond br failed.");
         goto fail;
     }
@@ -2576,12 +2580,14 @@ aot_compile_op_call_indirect(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         goto fail;
     }
 
+    comp_ctx->debug_inst_kind = CallIndirect;
     if (!(value_ret = WAMR_BUILD_CALL(comp_ctx->builder, llvm_func_type, func,
-                                     param_values, total_param_count,
-                                     func_result_count > 0 ? "ret" : ""))) {
+                                      param_values, total_param_count,
+                                      func_result_count > 0 ? "ret" : ""))) {
         aot_set_last_error("llvm build call failed.");
         goto fail;
     }
+    comp_ctx->debug_inst_kind = Other;
 
     /* Check whether exception was thrown when executing the function */
     if ((comp_ctx->enable_bound_check || is_win_platform(comp_ctx))
@@ -2966,7 +2972,7 @@ aot_compile_op_call_ref(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     /* If func_idx < import_func_count, jump to call import block,
        else jump to call non-import block */
     if (!WAMR_BUILD_CONDBR(comp_ctx->builder, cmp_func_idx, block_call_import,
-                         block_call_non_import)) {
+                           block_call_non_import)) {
         aot_set_last_error("llvm build cond br failed.");
         goto fail;
     }
@@ -3073,8 +3079,8 @@ aot_compile_op_call_ref(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
     }
 
     if (!(value_ret = WAMR_BUILD_CALL(comp_ctx->builder, llvm_func_type, func,
-                                     param_values, total_param_count,
-                                     func_result_count > 0 ? "ret" : ""))) {
+                                      param_values, total_param_count,
+                                      func_result_count > 0 ? "ret" : ""))) {
         aot_set_last_error("llvm build call failed.");
         goto fail;
     }

@@ -1080,17 +1080,21 @@ aot_compile_func(AOTCompContext *comp_ctx, uint32 func_index)
             case WASM_OP_BR:
             {
                 read_leb_uint32(frame_ip, frame_ip_end, br_depth);
+                comp_ctx->debug_inst_kind = Br;
                 if (!aot_compile_op_br(comp_ctx, func_ctx, br_depth, &frame_ip))
                     return false;
+                comp_ctx->debug_inst_kind = Other;
                 break;
             }
 
             case WASM_OP_BR_IF:
             {
                 read_leb_uint32(frame_ip, frame_ip_end, br_depth);
+                comp_ctx->debug_inst_kind = Brif;
                 if (!aot_compile_op_br_if(comp_ctx, func_ctx, br_depth,
                                           &frame_ip))
                     return false;
+                comp_ctx->debug_inst_kind = Other;
                 break;
             }
 
@@ -1109,13 +1113,13 @@ aot_compile_func(AOTCompContext *comp_ctx, uint32 func_index)
                 for (i = 0; i <= br_count; i++)
                     br_depths[i] = *frame_ip++;
 #endif
-
+                comp_ctx->debug_inst_kind = BrTable;
                 if (!aot_compile_op_br_table(comp_ctx, func_ctx, br_depths,
                                              br_count, &frame_ip)) {
                     wasm_runtime_free(br_depths);
                     return false;
                 }
-
+                comp_ctx->debug_inst_kind = Other;
                 wasm_runtime_free(br_depths);
                 break;
             }
@@ -1150,10 +1154,11 @@ aot_compile_func(AOTCompContext *comp_ctx, uint32 func_index)
 #endif
 
             case WASM_OP_RETURN:
+                comp_ctx->debug_inst_kind = Return;
                 if (!aot_compile_op_return(comp_ctx, func_ctx, &frame_ip))
                     return false;
+                comp_ctx->debug_inst_kind = Other;
                 break;
-
             case WASM_OP_CALL:
             {
                 read_leb_uint32(frame_ip, frame_ip_end, func_idx);

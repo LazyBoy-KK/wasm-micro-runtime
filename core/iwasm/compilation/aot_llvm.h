@@ -358,6 +358,16 @@ typedef struct AOTLLVMConsts {
     LLVMValueRef i8_ptr_null;
 } AOTLLVMConsts;
 
+typedef enum InstKind {
+    Other = 1,
+    Call = 2,
+    CallIndirect = 4,
+    Br = 8,
+    Brif = 16,
+    BrTable = 32,
+    Return = 64,
+} InstKind;
+
 /**
  * Compiler context
  */
@@ -372,6 +382,7 @@ typedef struct AOTCompContext {
     LLVMMetadataRef debug_file;
     LLVMMetadataRef debug_comp_unit;
     LLVMValueRef cur_func;
+    InstKind debug_inst_kind;
     int debug_file_fd;
     int cur_line;
     HashMap *func_debug_map;
