@@ -2549,7 +2549,7 @@ aot_create_comp_context(const AOTCompData *comp_data,
         goto fail;
     }
 
-    assert(init_debug_ctx(comp_ctx, wasm_file_name) == true);
+    init_debug_ctx(comp_ctx, wasm_file_name);
 
 #if WASM_ENABLE_DEBUG_AOT != 0
     LLVMAddModuleFlag(
