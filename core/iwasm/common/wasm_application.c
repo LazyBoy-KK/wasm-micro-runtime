@@ -89,6 +89,28 @@ check_main_func_type(const WASMFuncType *type, bool is_memory64)
     return true;
 }
 
+#if 1
+#include "wasm_export.h"
+bool record_vmctx(WASMModuleInstanceCommon *module_inst) {
+	bh_assert(module_inst->module_type == Wasm_Module_AoT);
+	const char *path = getenv("VMCTX_PATH");
+    if (path == NULL) {
+        path = "/tmp/vmctx.txt";
+    }
+    FILE *f = fopen(path, "w");
+    if (!f) {
+        return false;
+    }
+	WASMExecEnv *exec_env = wasm_runtime_get_exec_env_singleton(module_inst);
+	WASMModuleInstance *inst = (WASMModuleInstance *)module_inst;
+	AOTModule *module = (AOTModule *)inst->module;
+    fprintf(f, "%ld %ld %ld %ld", 
+        (uint64)module_inst, (uint64)module->total_inst_size, (uint64)exec_env, (uint64)sizeof(WASMExecEnv));
+    fclose(f);
+    return true;
+}
+#endif
+
 static bool
 execute_main(WASMModuleInstanceCommon *module_inst, int32 argc, char *argv[])
 {
@@ -114,6 +136,12 @@ execute_main(WASMModuleInstanceCommon *module_inst, int32 argc, char *argv[])
                                    "create singleton exec_env failed");
         return false;
     }
+
+#if 1
+	if (!record_vmctx(module_inst)) {
+		return false;
+	}
+#endif
 
 #if WASM_ENABLE_LIBC_WASI != 0
     /* In wasi mode, we should call the function named "_start"

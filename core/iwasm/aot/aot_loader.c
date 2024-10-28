@@ -4146,6 +4146,25 @@ fail:
     return false;
 }
 
+#if 1
+bool record_code_addr(AOTModule *module) {
+    const char *path = getenv("CODE_ADDR_PATH");
+    if (path == NULL) {
+        path = "/tmp/code_addr.txt";
+    }
+    FILE *f = fopen(path, "w");
+    if (!f) {
+        return false;
+    }
+    uint32 plt_size = get_plt_table_size();
+    void *plt_base = module->code + module->code_size - plt_size;
+    fprintf(f, "%ld %ld %ld %ld", 
+        (uint64)module->code, (uint64)(module->code_size - plt_size), (uint64)plt_base, (uint64)plt_size);
+    fclose(f);
+    return true;
+}
+#endif
+
 static bool
 load(const uint8 *buf, uint32 size, AOTModule *module,
      bool wasm_binary_freeable, char *error_buf, uint32 error_buf_size)
@@ -4188,6 +4207,12 @@ load(const uint8 *buf, uint32 size, AOTModule *module,
            module->code and will be destroyed in aot_unload() */
         destroy_sections(section_list, false);
     }
+
+#if 1
+    if (!record_code_addr(module)) {
+        return false;
+    }
+#endif
 
 #if 0
     {

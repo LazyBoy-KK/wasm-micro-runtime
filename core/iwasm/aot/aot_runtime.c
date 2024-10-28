@@ -1004,6 +1004,22 @@ aot_get_default_memory(AOTModuleInstance *module_inst)
         return NULL;
 }
 
+#if 1
+bool record_default_memory(WASMMemoryInstance *memory) {
+    const char *path = getenv("LINEAR_MEMORY_PATH");
+    if (!path) {
+        path = "/tmp/linear_mem.txt";
+    }
+    FILE *f = fopen(path, "w");
+    if (!f) {
+        return false;
+    }
+    fprintf(f, "%ld %ld", (uint64)memory->memory_data, (uint64)(memory->memory_data_end - memory->memory_data));
+    fclose(f);
+    return true;
+}
+#endif
+
 static bool
 memories_instantiate(AOTModuleInstance *module_inst, AOTModuleInstance *parent,
                      AOTModule *module, uint32 heap_size,
@@ -1042,6 +1058,12 @@ memories_instantiate(AOTModuleInstance *module_inst, AOTModuleInstance *parent,
         /* Ignore setting memory init data if no memory inst is created */
         return true;
     }
+
+#if 1
+    if (!record_default_memory(memory_inst)) {
+        return false;
+    }
+#endif
 
     for (i = 0; i < module->mem_init_data_count; i++) {
         data_seg = module->mem_init_data_list[i];
@@ -1608,6 +1630,10 @@ aot_instantiate(AOTModule *module, AOTModuleInstance *parent,
               runtime_malloc(total_size, error_buf, error_buf_size))) {
         return NULL;
     }
+
+#if 1
+	module->total_inst_size = total_size;
+#endif
 
     module_inst->module_type = Wasm_Module_AoT;
     module_inst->module = (void *)module;
@@ -2814,7 +2840,17 @@ aot_module_dup_data(AOTModuleInstance *module_inst, const char *src,
 bool
 aot_enlarge_memory(AOTModuleInstance *module_inst, uint32 inc_page_count)
 {
+#if 0
     return wasm_enlarge_memory(module_inst, inc_page_count);
+#endif
+#if 1
+    bool ret = wasm_enlarge_memory(module_inst, inc_page_count);
+    WASMMemoryInstance *memory_inst = aot_get_default_memory(module_inst);
+    if (!record_default_memory(memory_inst)) {
+        return false;
+    }
+    return ret;
+#endif
 }
 
 bool
