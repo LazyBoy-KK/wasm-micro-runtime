@@ -174,10 +174,10 @@ build_debug_info(AOTCompContext *comp_ctx, LLVMValueRef inst, char *inst_str,
 {
     char temp[5] = "0 ";
     size_t len = strlen(inst_str) + strlen(file_name) + strlen(location)
-                 + strlen("\tLLVMIRInfo") + strlen(" ") + strlen("\n") + 2;
+                 + strlen("\tIRInfo") + strlen(" ") + strlen("\n") + 2;
     char *info = malloc(len);
     memset(info, 0, len);
-    strcat(info, "\tLLVMIRInfo");
+    strcat(info, "\tIRInfo");
     if ((kind & comp_ctx->debug_inst_kind) != 0) {
         sprintf(temp, "%d ", __builtin_ctz(comp_ctx->debug_inst_kind));
     }
