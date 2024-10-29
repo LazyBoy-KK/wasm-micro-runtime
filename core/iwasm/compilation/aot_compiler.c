@@ -4,6 +4,7 @@
  */
 
 #include "aot_compiler.h"
+#include "aot_debug.h"
 #include "aot_emit_compare.h"
 #include "aot_emit_conversion.h"
 #include "aot_emit_memory.h"
@@ -958,6 +959,7 @@ aot_compile_func(AOTCompContext *comp_ctx, uint32 func_index)
     float32 f32_const;
     float64 f64_const;
     AOTFuncType *func_type = NULL;
+    char temp_str[20];
 #if WASM_ENABLE_DEBUG_AOT != 0
     LLVMMetadataRef location;
 #endif
@@ -1162,6 +1164,8 @@ aot_compile_func(AOTCompContext *comp_ctx, uint32 func_index)
             case WASM_OP_CALL:
             {
                 read_leb_uint32(frame_ip, frame_ip_end, func_idx);
+                sprintf(temp_str, "Call %d", func_idx);
+                insert_wasm_opcode(comp_ctx, temp_str);
                 if (!aot_compile_op_call(comp_ctx, func_ctx, func_idx, false))
                     return false;
                 break;
@@ -1180,7 +1184,8 @@ aot_compile_func(AOTCompContext *comp_ctx, uint32 func_index)
                     frame_ip++;
                     tbl_idx = 0;
                 }
-
+                sprintf(temp_str, "CallIndirect %d %d", type_idx, tbl_idx);
+                insert_wasm_opcode(comp_ctx, temp_str);
                 if (!aot_compile_op_call_indirect(comp_ctx, func_ctx, type_idx,
                                                   tbl_idx))
                     return false;

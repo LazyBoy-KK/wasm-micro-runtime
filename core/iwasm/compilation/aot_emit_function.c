@@ -1514,7 +1514,6 @@ aot_compile_op_call(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
         }
     }
 
-    comp_ctx->debug_inst_kind = Call;
     if (func_idx < import_func_count) {
         if (comp_ctx->enable_aux_stack_frame
             && !commit_params_to_frame_of_import_func(
@@ -1600,7 +1599,7 @@ aot_compile_op_call(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
             wasm_ret_type = VALUE_TYPE_VOID;
             ret_type = VOID_TYPE;
         }
-
+        comp_ctx->debug_inst_kind = Call;
         if (!signature) {
             if (comp_ctx->quick_invoke_c_api_import) {
                 uint32 buf_size_needed =
@@ -1695,6 +1694,7 @@ aot_compile_op_call(AOTCompContext *comp_ctx, AOTFuncContext *func_ctx,
 #if LLVM_VERSION_MAJOR >= 14
         LLVMTypeRef llvm_func_type;
 #endif
+        comp_ctx->debug_inst_kind = Call;
         if (comp_ctx->is_indirect_mode) {
             LLVMTypeRef func_ptr_type;
 

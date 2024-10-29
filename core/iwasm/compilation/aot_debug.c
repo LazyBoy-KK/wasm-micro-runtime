@@ -197,13 +197,34 @@ build_debug_info(AOTCompContext *comp_ctx, LLVMValueRef inst, char *inst_str,
     bh_vector_append(&func_info->insts, &inst_info);
 }
 
+void
+insert_wasm_opcode(AOTCompContext *comp_ctx, char *wasm_opcode)
+{
+    size_t len = strlen("\tWasmOpcode") + strlen(" ") + strlen(wasm_opcode)
+                 + strlen("\n") + 1;
+    char *info = malloc(len);
+    memset(info, 0, len);
+    strcat(info, "\tWasmOpcode ");
+    strcat(info, wasm_opcode);
+    strcat(info, "\n");
+    const char *func_name = LLVMGetValueName(comp_ctx->cur_func);
+    FuncInfo *func_info = (FuncInfo *)bh_hash_map_find(comp_ctx->func_debug_map,
+                                                       (void *)func_name);
+    assert(func_info != NULL);
+    InstInfo inst_info;
+    inst_info.info = info;
+    inst_info.kind = WasmOpcode;
+    inst_info.inst = NULL;
+    bh_vector_append(&func_info->insts, &inst_info);
+}
+
 LLVMValueRef
 build_load(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef ptr,
            const char *name, const char *file_name, int line)
 {
     char temp[20];
     LLVMValueRef value = LLVMBuildLoad2(builder, type, ptr, name);
-    sprintf(temp, "(line: %d)", line);
+    sprintf(temp, ":%d", line);
     build_debug_info(cur_ctx, value, "Load ", file_name, temp, Other);
     return value;
 }
@@ -214,7 +235,7 @@ build_store(LLVMBuilderRef builder, LLVMValueRef val, LLVMValueRef ptr,
 {
     char temp[20];
     LLVMValueRef value = LLVMBuildStore(builder, val, ptr);
-    sprintf(temp, "(line: %d)", line);
+    sprintf(temp, ":%d", line);
     build_debug_info(cur_ctx, value, "Store ", file_name, temp, Other);
     return value;
 }
@@ -225,7 +246,7 @@ build_br(LLVMBuilderRef builder, LLVMBasicBlockRef dest, const char *file_name,
 {
     char temp[20];
     LLVMValueRef value = LLVMBuildBr(builder, dest);
-    sprintf(temp, "(line: %d)", line);
+    sprintf(temp, ":%d", line);
     build_debug_info(cur_ctx, value, "UncondBranch ", file_name, temp,
                      Br | Brif);
     return value;
@@ -237,7 +258,7 @@ build_condbr(LLVMBuilderRef builder, LLVMValueRef cond, LLVMBasicBlockRef then,
 {
     char temp[20];
     LLVMValueRef value = LLVMBuildCondBr(builder, cond, then, other);
-    sprintf(temp, "(line: %d)", line);
+    sprintf(temp, ":%d", line);
     build_debug_info(cur_ctx, value, "CondBranch ", file_name, temp, Brif | Br);
     return value;
 }
@@ -250,7 +271,7 @@ build_call(LLVMBuilderRef builder, LLVMTypeRef func_type, LLVMValueRef func,
     char temp[20];
     LLVMValueRef value =
         LLVMBuildCall2(builder, func_type, func, args, num_args, name);
-    sprintf(temp, "(line: %d)", line);
+    sprintf(temp, ":%d", line);
     build_debug_info(cur_ctx, value, "Call ", file_name, temp,
                      Call | CallIndirect);
     return value;
@@ -263,7 +284,7 @@ build_switch(LLVMBuilderRef builder, LLVMValueRef val,
 {
     char temp[20];
     LLVMValueRef value = LLVMBuildSwitch(builder, val, default_block, case_num);
-    sprintf(temp, "(line: %d)", line);
+    sprintf(temp, ":%d", line);
     build_debug_info(cur_ctx, value, "Switch ", file_name, temp, BrTable);
     return value;
 }
@@ -274,7 +295,7 @@ build_ret(LLVMBuilderRef builder, LLVMValueRef val, const char *file_name,
 {
     char temp[20];
     LLVMValueRef value = LLVMBuildRet(builder, val);
-    sprintf(temp, "(line: %d)", line);
+    sprintf(temp, ":%d", line);
     build_debug_info(cur_ctx, value, "Return ", file_name, temp, Return);
     return value;
 }
@@ -284,7 +305,7 @@ build_ret_void(LLVMBuilderRef builder, const char *file_name, int line)
 {
     char temp[20];
     LLVMValueRef value = LLVMBuildRetVoid(builder);
-    sprintf(temp, "(line: %d)", line);
+    sprintf(temp, ":%d", line);
     build_debug_info(cur_ctx, value, "Return ", file_name, temp, Other);
     return value;
 }

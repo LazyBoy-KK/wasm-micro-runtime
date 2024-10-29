@@ -15,6 +15,9 @@ init_debug_ctx(AOTCompContext *comp_ctx, const char *wasm_file_name);
 void
 finish_debug_info(AOTCompContext *comp_ctx);
 
+void
+insert_wasm_opcode(AOTCompContext *comp_ctx, char *wasm_opcode);
+
 LLVMValueRef
 build_load(LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef ptr,
            const char *name, const char *file_name, int line);
