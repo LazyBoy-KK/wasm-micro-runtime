@@ -648,6 +648,18 @@ wasm_native_destroy()
 static void
 invoke_no_args_v(void *func_ptr, void *exec_env, int32 *argv, int32 *argv_ret)
 {
+#if 1
+	void* p = NULL;
+	const char *path = getenv("STACK_BASE_ADDR");
+	if (path == NULL) {
+		path = "/tmp/stack_base.txt";
+	}
+	FILE *f = fopen(path, "w");
+	if (f) {
+		fprintf(f, "%ld\n", (uint64_t)(void *)&p);
+		fclose(f);
+	}
+#endif
     void (*native_code)(WASMExecEnv *) = func_ptr;
     native_code(exec_env);
 }

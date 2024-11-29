@@ -2121,18 +2121,6 @@ invoke_native_with_hw_bound_check(WASMExecEnv *exec_env, void *func_ptr,
 
     if (os_setjmp(jmpbuf_node.jmpbuf) == 0) {
 #if WASM_ENABLE_QUICK_AOT_ENTRY != 0
-#if 1
-	void* p = NULL;
-	const char *path = getenv("STACK_BASE_ADDR");
-	if (path == NULL) {
-		path = "/tmp/stack_base.txt";
-	}
-	FILE *f = fopen(path, "w");
-	if (f) {
-		fprintf(f, "%ld\n", (uint64_t)(void *)&p);
-		fclose(f);
-	}
-#endif
         /* Quick call if the quick aot entry is registered */
         if (!signature && func_type->quick_aot_entry) {
             void (*invoke_native)(void *func_ptr, void *exec_env, uint32 *argv,
